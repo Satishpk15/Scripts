@@ -1,0 +1,44 @@
+Create a main.tf file to set up an ECR repository and attach the required IAM policies for pulling images.
+
+provider "aws" {
+  region = "us-east-1" # Change this to your preferred region
+}
+
+# Create an ECR repository
+resource "aws_ecr_repository" "my_repository" {
+  name = "my-ecr-repo"
+}
+
+# Create an IAM policy to allow pushing/pulling images from ECR
+resource "aws_iam_policy" "ecr_policy" {
+  name        = "ECRAccessPolicy"
+  description = "Policy to allow ECR push/pull actions"
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage",
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:PutImage",
+          "ecr:InitiateLayerUpload",
+          "ecr:UploadLayerPart",
+          "ecr:CompleteLayerUpload"
+        ]
+        Resource = aws_ecr_repository.my_repository.arn
+      }
+    ]
+  })
+}
+
+# Attach policy to the IAM role or user (adjust as per your use case)
+resource "aws_iam_role_policy_attachment" "ecr_policy_attach" {
+  role       = "<IAM_ROLE_NAME>" # Replace with your IAM role name
+  policy_arn = aws_iam_policy.ecr_policy.arn
+}
+
+output "repository_url" {
+  value = aws_ecr_repository.my_repository.repository_url
+}
