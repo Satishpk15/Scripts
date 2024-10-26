@@ -1,0 +1,25 @@
+write script Build, Test, and Push the Docker Image to ECR
+#!/bin/bash
+
+# Variables
+REGION="us-east-1"
+REPO_NAME="my-ecr-repo"
+
+# Get repository URL from Terraform output
+REPO_URL=$(terraform output -raw repository_url)
+
+# Authenticate Docker with ECR
+aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $REPO_URL
+
+# Build, test, and push the Docker image
+docker build -t my-image .
+docker run --rm my-image <test-command> # Replace <test-command> with the actual command to test the Docker image
+
+if [ $? -eq 0 ]; then
+    echo "Tests passed, pushing to ECR..."
+    docker tag my-image:latest $REPO_URL:latest
+    docker push $REPO_URL:latest
+    echo "Docker image pushed to ECR successfully."
+else
+    echo "Tests failed. Aborting push."
+fi
